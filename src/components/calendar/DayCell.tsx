@@ -50,16 +50,14 @@ export default function DayCell({ day, dayNum, staffNames, isToday, onTap }: Pro
         day.shifts.map((shift) => (
           <div
             key={shift.id}
-            className={`text-[10px] leading-tight rounded px-0.5 mb-0.5 truncate ${getStaffColor(
+            className={`text-[10px] leading-tight rounded px-0.5 mb-0.5 ${getStaffColor(
               shift.name,
               staffNames
             )}`}
           >
-            {shift.name}
+            <div className="truncate">{shift.name}</div>
             {shift.startTime && (
-              <span className="text-[9px] opacity-70 ml-0.5">
-                {shift.startTime}
-              </span>
+              <div className="text-[9px] opacity-70">{shift.startTime}</div>
             )}
           </div>
         ))}
