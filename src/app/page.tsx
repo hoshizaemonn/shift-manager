@@ -1,65 +1,189 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { MonthData } from "@/lib/types";
+import { generateId } from "@/lib/utils";
+import { useShiftData } from "@/hooks/useShiftData";
+import ImageUploader from "@/components/upload/ImageUploader";
+import ShiftEditor from "@/components/upload/ShiftEditor";
+import { Loader2 } from "lucide-react";
+
+export default function UploadPage() {
+  const router = useRouter();
+  const { saveMonth } = useShiftData();
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState<MonthData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+
+  const handleFilesChanged = useCallback((newFiles: File[], newPreviews: string[]) => {
+    setFiles(newFiles);
+    setPreviews(newPreviews);
+  }, []);
+
+  const handleExtract = async () => {
+    if (files.length === 0) return;
+    setIsExtracting(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      files.forEach((file, i) => {
+        formData.append(`image_${i}`, file);
+      });
+      formData.append("year", String(year));
+      formData.append("month", String(month));
+
+      const res = await fetch("/api/shifts/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+
+      const monthData: MonthData = {
+        id: generateId(),
+        year: result.data.year || year,
+        month: result.data.month || month,
+        days: result.data.days.map(
+          (d: { date: string; isClosed: boolean; shifts: Array<{ name: string; startTime: string }> }) => ({
+            ...d,
+            shifts: d.shifts.map(
+              (s: { name: string; startTime: string }) => ({
+                ...s,
+                id: generateId(),
+                endTime: null,
+              })
+            ),
+          })
+        ),
+        staffNames: result.data.staffNames || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setExtractedData(monthData);
+    } catch {
+      setError("読み取りに失敗しました。もう一度お試しください。");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleSave = (data: MonthData) => {
+    saveMonth(data);
+    router.push("/calendar");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="max-w-lg mx-auto px-4 py-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+          シフト読み取り
+        </h1>
+
+        {!extractedData ? (
+          <div className="space-y-6">
+            <ImageUploader
+              files={files}
+              previews={previews}
+              onFilesChanged={handleFilesChanged}
+              isLoading={isExtracting}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+            {files.length > 0 && (
+              <>
+                <p className="text-sm text-gray-500 text-center">
+                  {files.length}枚の画像を選択中
+                </p>
+
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-sm text-gray-600 mb-1">
+                      年
+                    </label>
+                    <select
+                      value={year}
+                      onChange={(e) => setYear(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-white"
+                    >
+                      {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(
+                        (y) => (
+                          <option key={y} value={y}>
+                            {y}年
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm text-gray-600 mb-1">
+                      月
+                    </label>
+                    <select
+                      value={month}
+                      onChange={(e) => setMonth(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-white"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                        <option key={m} value={m}>
+                          {m}月
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleExtract}
+                  disabled={isExtracting}
+                  className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:bg-blue-300 transition-colors flex items-center justify-center gap-2"
+                >
+                  {isExtracting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      {files.length}枚を読み取り中...
+                    </>
+                  ) : (
+                    `AIで読み取り開始（${files.length}枚）`
+                  )}
+                </button>
+              </>
+            )}
+
+            {error && (
+              <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setExtractedData(null);
+                setFiles([]);
+                setPreviews([]);
+              }}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              ← 画像を再アップロード
+            </button>
+            <ShiftEditor data={extractedData} onSave={handleSave} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
