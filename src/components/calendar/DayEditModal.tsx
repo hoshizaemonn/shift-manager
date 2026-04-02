@@ -46,13 +46,12 @@ export default function DayEditModal({ day, staffNames, onSave, onClose }: Props
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md bg-white rounded-2xl p-5 max-h-[70vh] overflow-y-auto"
+        className="w-full max-w-sm bg-white rounded-2xl p-4 max-h-[70vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold">
             {dayNum}日({dowStr})
           </h3>
@@ -61,8 +60,7 @@ export default function DayEditModal({ day, staffNames, onSave, onClose }: Props
           </button>
         </div>
 
-        {/* Closed toggle */}
-        <label className="flex items-center gap-2 mb-4 text-sm">
+        <label className="flex items-center gap-2 mb-3 text-sm">
           <input
             type="checkbox"
             checked={isClosed}
@@ -72,33 +70,30 @@ export default function DayEditModal({ day, staffNames, onSave, onClose }: Props
           この日は休み
         </label>
 
-        {/* Shifts */}
         {!isClosed && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {shifts.map((shift) => (
-              <div key={shift.id} className="flex items-center gap-2">
+              <div key={shift.id} className="flex items-center gap-1.5">
                 <input
                   type="text"
                   value={shift.name}
                   onChange={(e) => updateShift(shift.id, "name", e.target.value)}
                   placeholder="名前"
                   list="staff-names"
-                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl"
+                  className="min-w-0 flex-1 px-2 py-2 text-sm border border-gray-200 rounded-lg"
                 />
                 <select
                   value={shift.startTime}
                   onChange={(e) => updateShift(shift.id, "startTime", e.target.value)}
-                  className="w-24 px-2 py-2 text-sm border border-gray-200 rounded-xl bg-white"
+                  className="w-[80px] shrink-0 px-1 py-2 text-sm border border-gray-200 rounded-lg bg-white"
                 >
                   {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {t || "時間"}
-                    </option>
+                    <option key={t} value={t}>{t || "時間"}</option>
                   ))}
                 </select>
                 <button
                   onClick={() => removeShift(shift.id)}
-                  className="p-2 text-gray-400 hover:text-red-500"
+                  className="shrink-0 p-1.5 text-gray-400 hover:text-red-500"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -121,7 +116,6 @@ export default function DayEditModal({ day, staffNames, onSave, onClose }: Props
           </div>
         )}
 
-        {/* Current staff preview */}
         {!isClosed && shifts.filter((s) => s.name).length > 0 && (
           <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-gray-100">
             {shifts
@@ -137,10 +131,9 @@ export default function DayEditModal({ day, staffNames, onSave, onClose }: Props
           </div>
         )}
 
-        {/* Save */}
         <button
           onClick={handleSave}
-          className="w-full mt-5 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors"
+          className="w-full mt-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors"
         >
           保存
         </button>

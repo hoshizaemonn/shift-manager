@@ -10,6 +10,11 @@ type Props = {
   onSave: (data: MonthData) => void;
 };
 
+const TIME_OPTIONS = [
+  "", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+  "18:00", "18:30", "19:00", "19:30", "20:00",
+];
+
 export default function ShiftEditor({ data, onSave }: Props) {
   const [monthData, setMonthData] = useState<MonthData>(data);
 
@@ -70,10 +75,6 @@ export default function ShiftEditor({ data, onSave }: Props) {
     });
   };
 
-  const daysWithShifts = monthData.days.filter(
-    (d) => d.shifts.length > 0 || d.isClosed
-  );
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -132,58 +133,48 @@ export default function ShiftEditor({ data, onSave }: Props) {
                 >
                   {dayNum}日({dowStr})
                 </span>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1 text-xs text-gray-500">
-                    <input
-                      type="checkbox"
-                      checked={day.isClosed}
-                      onChange={() => toggleClosed(day.date)}
-                      className="rounded"
-                    />
-                    休み
-                  </label>
-                </div>
+                <label className="flex items-center gap-1 text-xs text-gray-500">
+                  <input
+                    type="checkbox"
+                    checked={day.isClosed}
+                    onChange={() => toggleClosed(day.date)}
+                    className="rounded"
+                  />
+                  休み
+                </label>
               </div>
 
               {!day.isClosed && (
                 <div className="space-y-2">
                   {day.shifts.map((shift) => (
-                    <div key={shift.id} className="flex items-center gap-2">
+                    <div key={shift.id} className="flex items-center gap-1.5">
                       <input
                         type="text"
                         value={shift.name}
                         onChange={(e) =>
-                          updateShift(
-                            day.date,
-                            shift.id,
-                            "name",
-                            e.target.value
-                          )
+                          updateShift(day.date, shift.id, "name", e.target.value)
                         }
                         placeholder="名前"
-                        className={`flex-1 px-2 py-1 text-sm border rounded-lg ${
+                        className={`min-w-0 flex-1 px-2 py-1.5 text-sm border rounded-lg ${
                           shift.name === "?"
                             ? "border-yellow-400 bg-yellow-50"
                             : "border-gray-200"
                         }`}
                       />
-                      <input
-                        type="text"
+                      <select
                         value={shift.startTime}
                         onChange={(e) =>
-                          updateShift(
-                            day.date,
-                            shift.id,
-                            "startTime",
-                            e.target.value
-                          )
+                          updateShift(day.date, shift.id, "startTime", e.target.value)
                         }
-                        placeholder="開始"
-                        className="w-16 px-2 py-1 text-sm border border-gray-200 rounded-lg text-center"
-                      />
+                        className="w-[80px] shrink-0 px-1 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                      >
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={t} value={t}>{t || "時間"}</option>
+                        ))}
+                      </select>
                       <button
                         onClick={() => removeShift(day.date, shift.id)}
-                        className="p-1 text-gray-400 hover:text-red-500"
+                        className="shrink-0 p-1 text-gray-400 hover:text-red-500"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -57,16 +57,22 @@ export default function UploadPage() {
         year: result.data.year || year,
         month: result.data.month || month,
         days: result.data.days.map(
-          (d: { date: string; isClosed: boolean; shifts: Array<{ name: string; startTime: string }> }) => ({
-            ...d,
-            shifts: d.shifts.map(
-              (s: { name: string; startTime: string }) => ({
-                ...s,
-                id: generateId(),
-                endTime: null,
-              })
-            ),
-          })
+          (d: { date: string; isClosed: boolean; shifts: Array<{ name: string; startTime: string }> }) => {
+            // Default: Tuesday(2) and Wednesday(3) are closed if no shifts
+            const dow = new Date(d.date).getDay();
+            const isDefaultClosed = (dow === 2 || dow === 3) && d.shifts.length === 0;
+            return {
+              ...d,
+              isClosed: d.isClosed || isDefaultClosed,
+              shifts: d.shifts.map(
+                (s: { name: string; startTime: string }) => ({
+                  ...s,
+                  id: generateId(),
+                  endTime: null,
+                })
+              ),
+            };
+          }
         ),
         staffNames: result.data.staffNames || [],
         createdAt: new Date().toISOString(),
